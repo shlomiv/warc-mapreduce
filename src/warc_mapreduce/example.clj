@@ -4,7 +4,7 @@
 ;; to run:
 ;;   lein test warc-mapreduce.example  
 ;;
-;; This will count the instances of each word in README.txt and write
+;; This will count the instances of each word in the input warc and write
 ;; the results to out1/part-00000
 
 (ns warc-mapreduce.example
