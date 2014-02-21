@@ -10,8 +10,7 @@
 (ns warc-mapreduce.example
   (:require [clojure-hadoop.gen     :as gen]
             [clojure-hadoop.imports :as imp]
-            [clojure-hadoop.config  :refer [conf]]
-            )
+            [clojure-hadoop.config  :refer [conf]])
   (:import (java.util StringTokenizer)
            (org.apache.hadoop.util Tool)
            org.apache.hadoop.conf.Configuration
@@ -26,12 +25,8 @@
 (gen/gen-main-method)  ;; generates Tool.main method
 
 (defn mapper-map
-  "This is our implementation of the Mapper.map method.  The key and
-  value arguments are sub-classes of Hadoop's Writable interface, so
-  we have to convert them to strings or some other type before we can
-  use them.  Likewise, we have to call the Context.collect method with
-  objects that are sub-classes of Writable."
   [this key ^WritableWarcRecord warc-value ^MapContext context]
+  ;; extract warc-wet record
   (let [^WarcRecord record (.getRecord warc-value)
         url    (.getHeaderMetadataItem record "WARC-Target-URI") 
         value  (.getContentUTF8 record)]
@@ -39,29 +34,11 @@
       (.write context (Text. word) (LongWritable. 1)))))
 
 (defn reducer-reduce
-  "This is our implementation of the Reducer.reduce method.  The key
-  argument is a sub-class of Hadoop's Writable, but 'values' is a Java
-  Iterator that returns successive values.  We have to use
-  iterator-seq to get a Clojure sequence from the Iterator.
-
-  Beware, however, that Hadoop re-uses a single object for every
-  object returned by the Iterator.  So when you get an object from the
-  iterator, you must extract its value (as we do here with the 'get'
-  method) immediately, before accepting the next value from the
-  iterator.  That is, you cannot hang on to past values from the
-  iterator."
   [this key values ^ReduceContext context]
   (let [sum (reduce + (map (fn [^LongWritable v] (.get v)) values))]
     (.write context key (LongWritable. sum))))
 
 (defn tool-run
-  "This is our implementation of the Tool.run method.  args are the
-  command-line arguments as a Java array of strings.  We have to
-  create a Job object, set all the MapReduce job parameters, then
-  call the JobClient.runJob static method on it.
-
-  This method must return zero on success or Hadoop will report that
-  the job failed."
   [^Tool this args]
   (doto (Job.)
     (.setJarByClass (.getClass this))
@@ -71,7 +48,7 @@
       (conf :map "warc_mapreduce.example_mapper")
       (conf :reduce "warc_mapreduce.example_reducer")
       (conf :combine "warc_mapreduce.example_reducer")
-      (conf :input-format "edu.cmu.lemurproject.WarcFileInputFormat")
+      (conf :input-format "edu.cmu.lemurproject.WarcFileInputFormat") ;; use warc
       (conf :output-format "text")
       (conf :compress-output false)
       (conf :input (first args))
