@@ -36,6 +36,7 @@ package edu.cmu.lemurproject;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.URI;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,18 +64,18 @@ public class WarcFileRecordReader  extends RecordReader<LongWritable, WritableWa
   private FSDataInputStream currentFile=null;
   private CompressionCodec compressionCodec=null;
   private DataInputStream compressionInput=null;
-  private FileSystem fs=null;
+  // private FileSystem fs=null;
   private long totalFileSize=0;
   private long totalNumBytesRead=0;
-  
+
   private final LongWritable key = new LongWritable();
   private final WritableWarcRecord value = new WritableWarcRecord();
-    
+  private Configuration conf;
   @Override
   public void initialize(InputSplit split, TaskAttemptContext context)
   		throws IOException, InterruptedException {
-          Configuration conf = context.getConfiguration();
-    this.fs = FileSystem.get(conf);
+    this.conf = context.getConfiguration();
+    //this.fs = FileSystem.get(conf);
     if (split instanceof FileSplit) {
       this.filePathList=new Path[1];
       this.filePathList[0]=((FileSplit)split).getPath();
@@ -84,7 +85,8 @@ public class WarcFileRecordReader  extends RecordReader<LongWritable, WritableWa
 
     // get the total file sizes
     for (int i=0; i < filePathList.length; i++) {
-      totalFileSize += fs.getFileStatus(filePathList[i]).getLen();
+        //totalFileSize += fs.getFileStatus(filePathList[i]).getLen();
+        totalFileSize += filePathList[i].getFileSystem(conf).getFileStatus(filePathList[i]).getLen();
     }
 
     Class<? extends CompressionCodec> codecClass=null;
@@ -113,7 +115,7 @@ public class WarcFileRecordReader  extends RecordReader<LongWritable, WritableWa
       currentFilePath++;
       if (currentFilePath >= filePathList.length) { return false; }
 
-      currentFile=this.fs.open(filePathList[currentFilePath]);
+      currentFile=filePathList[currentFilePath].getFileSystem(conf).open(filePathList[currentFilePath]);
       LOG.info(filePathList[currentFilePath]);
 
       // is the file gzipped?
@@ -128,7 +130,7 @@ public class WarcFileRecordReader  extends RecordReader<LongWritable, WritableWa
     }
     return true;
   }
-  
+
   public boolean nextKeyValue() throws IOException {
       DataInputStream whichStream=null;
       if (compressionInput!=null) {
