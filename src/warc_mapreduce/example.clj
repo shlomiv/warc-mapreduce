@@ -1,8 +1,8 @@
-;; A modified example based on the first example of clojure-hadoop, 
+;; A modified example based on the first example of clojure-hadoop,
 ;; that uses warc input files
 ;;
 ;; to run:
-;;   lein test warc-mapreduce.example  
+;;   lein test warc-mapreduce.example
 ;;
 ;; This will count the instances of each word in the input warc and write
 ;; the results to out1/part-00000
@@ -33,7 +33,8 @@
 (defn file-lines [filename]
   (clojure.string/split-lines (slurp filename)))
 
-(def eng-words? (into #{} (rest (map #(first (clojure.string/split % #"\t")) (file-lines "/home/shlomiv/Downloads/dictionaryWords.tsv")))))
+(def eng-words? (constantly true))
+#_(into #{} (rest (map #(first (clojure.string/split % #"\t")) (file-lines "/home/shlomiv/Downloads/dictionaryWords.tsv"))))
 
 (defn has-known-words [percent ts]
   (> (quot (count ts) percent) (count (filter eng-words? ts))))
@@ -42,7 +43,7 @@
   [this key ^WritableWarcRecord warc-value ^MapContext context]
   ;; extract warc-wet record
   (let [^WarcRecord record (.getRecord warc-value)
-        url    (.getHeaderMetadataItem record "WARC-Target-URI") 
+        url    (.getHeaderMetadataItem record "WARC-Target-URI")
         value  (.getContentUTF8 record)
         tokens (enumeration-seq (StringTokenizer. (str value)))]
     (when (has-known-words 3 tokens)
@@ -79,10 +80,9 @@
   (is (tool-run (clojure_hadoop.job.) ["CC-MAIN-20131218054935-00092-ip-10-33-133-15.ec2.internal.warc.wet.gz" "/media/HD/tmp/out3"])))
 
 
-;; 
+;;
 ;; bag-of-words:   111.82s user 0.99s system 116% cpu 1:36.54 total 15M
-;; 
+;;
 ;; cld :           327.39s user 1.43s system 113% cpu 4:49.34 total 21M
 ;;
 ;; none:           213.22s user 1.30s system 121% cpu 2:56.63 total 24M
-
