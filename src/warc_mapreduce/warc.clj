@@ -16,7 +16,7 @@
   "Turns a warc input stream into a lazy-seq"
   [in-stream]
   (when-let [i (WarcRecord/readNextWarcRecord in-stream)]
-    (cons i (lazy-seq (warc-seq in-stream)))))
+    (cons i (lazy-seq (warc-seq-unchuked in-stream)))))
 
 (defn warc-seq-chunked
   "Turns a warc input stream into a chunked lazy-seq, for enhanced performance"
